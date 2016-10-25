@@ -1,10 +1,14 @@
 require 'readline'
 require 'pry'
+require_relative 'cymbol'
+require_relative 'cymbol/builtin_type_cymbol'
+require_relative 'cymbol/var_cymbol'
 require_relative 'ast'
 require_relative 'ast/assign'
 require_relative 'ast/bin_op'
 require_relative 'ast/block'
 require_relative 'ast/compound'
+require_relative 'ast/cymbol_table'
 require_relative 'ast/no_op'
 require_relative 'ast/num'
 require_relative 'ast/program'
@@ -15,6 +19,7 @@ require_relative 'ast/var'
 require_relative 'lexer'
 require_relative 'node_visitor'
 require_relative 'node_visitor/interpreter'
+require_relative 'node_visitor/cymbol_table_builder'
 require_relative 'parser'
 require_relative 'token'
 
@@ -54,9 +59,24 @@ def main(file_name)
   text = File.read(file_name)
   lexer = Lexer.new(text)
   parser = Parser.new(lexer)
+  tree = parser.parse
+  cymtab_builder = CymbolTableBuilder.new
+  cymtab_builder.visit(tree)
+  print "\n"
+  print "Symbol Table contents:\n"
+  print cymtab_builder.cymbol_table
+  print "\n"
+
+  lexer = Lexer.new(text)
+  parser = Parser.new(lexer)
   interpreter = Interpreter.new(parser)
-  result = interpreter.interpret
-  print "#{Interpreter::GLOBAL_SCOPE}\n"
+  _result = interpreter.interpret
+
+  print "\n"
+  print "Run-time GLOBAL_MEMORY contents:\n"
+  Interpreter::GLOBAL_SCOPE.each do |k, v|
+    print "#{k} = #{v}\n"
+  end
 end
 
 main(ARGV[0]) if ARGV[0]
